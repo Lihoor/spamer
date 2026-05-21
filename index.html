@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meme Clicker</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+header {
+    text-align: center;
+    padding: 20px 0;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+    margin-bottom: 20px;
+}
+header h1 { font-size: 2.5rem; background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.score-section {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.score-section h2 { font-size: 2rem; }
+.score-section .points { font-size: 3rem; font-weight: bold; color: #feca57; }
+.score-section .persecond { font-size: 1rem; color: #aaa; margin-top: 5px; }
+.meme-click-area {
+    text-align: center;
+    margin: 20px 0;
+}
+.meme-btn {
+    width: 200px; height: 200px;
+    border-radius: 20px;
+    border: 4px solid #feca57;
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    cursor: pointer;
+    font-size: 3rem;
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+}
+.meme-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(254,202,87,0.3); }
+.meme-btn:active { transform: scale(0.95); }
+.meme-btn .emoji { font-size: 5rem; line-height: 1; }
+.meme-btn .label { position: absolute; bottom: 15px; font-size: 0.9rem; font-weight: bold; color: #feca57; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+.click-fly { position: fixed; pointer-events: none; font-size: 1.5rem; font-weight: bold; color: #feca57; z-index: 999; animation: flyUp 0.8s ease-out forwards; }
+@keyframes flyUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.5); } }
+.shop {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+.shop h3 { grid-column: 1 / -1; font-size: 1.5rem; color: #48dbfb; }
+.meme-card {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 15px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+.meme-card:hover { border-color: #feca57; transform: translateY(-3px); box-shadow: 0 5px 20px rgba(254,202,87,0.2); }
+.meme-card.locked { opacity: 0.5; cursor: not-allowed; }
+.meme-card.locked:hover { transform: none; border-color: rgba(255,255,255,0.1); box-shadow: none; }
+.meme-card.owned { border-color: #48dbfb; background: rgba(72,219,251,0.1); }
+.meme-card .meme-emoji { font-size: 3rem; margin-bottom: 8px; }
+.meme-card .meme-name { font-weight: bold; font-size: 1rem; margin-bottom: 4px; }
+.meme-card .meme-desc { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; }
+.meme-card .meme-cost { font-size: 1.1rem; font-weight: bold; color: #feca57; }
+.meme-card .meme-count { font-size: 0.85rem; color: #48dbfb; }
+.shop-btn {
+    background: linear-gradient(45deg, #feca57, #ff6b6b);
+    border: none; color: #000; font-weight: bold; padding: 8px 20px;
+    border-radius: 25px; cursor: pointer; margin-top: 8px;
+    transition: transform 0.2s;
+}
+.shop-btn:hover { transform: scale(1.05); }
+.shop-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.tabs {
+    display: flex; justify-content: center; gap: 10px; margin: 20px 0;
+}
+.tab-btn {
+    padding: 8px 20px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.2);
+    background: transparent; color: #fff; cursor: pointer; font-size: 0.9rem;
+    transition: all 0.3s;
+}
+.tab-btn.active { border-color: #feca57; background: rgba(254,202,87,0.2); }
+.tab-btn:hover { border-color: #feca57; }
+.toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.9); color: #fff; padding: 12px 24px;
+    border-radius: 10px; border: 1px solid #feca57;
+    animation: toastIn 0.3s ease, toastOut 0.3s 1.7s ease forwards;
+    z-index: 1000; pointer-events: none;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateX(-50%) translateY(20px); } }
+.reset-btn {
+    background: rgba(255,107,107,0.2); border: 1px solid #ff6b6b;
+    color: #ff6b6b; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    font-size: 0.8rem; transition: all 0.3s; margin-top: 20px;
+}
+.reset-btn:hover { background: rgba(255,107,107,0.4); }
+footer { text-align: center; padding: 20px; color: #666; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>🔥 MEME CLICKER 🔥</h1>
+    </header>
+    <div class="score-section">
+        <div class="points" id="pointsDisplay">0</div>
+        <div>puncte meme</div>
+        <div class="persecond" id="perSecondDisplay">📈 +0/sec</div>
+    </div>
+    <div class="meme-click-area">
+        <button class="meme-btn" id="clickBtn">
+            <span class="emoji">😂</span>
+            <span class="label">MAI, SĂ-ȚI EXPLIC</span>
+        </button>
+    </div>
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="click">Click</button>
+        <button class="tab-btn" data-tab="auto">Auto</button>
+    </div>
+    <div class="shop" id="shopContainer"></div>
+    <div style="text-align:center;margin-top:20px;">
+        <button class="reset-btn" id="resetBtn">🗑 Resetează progresul</button>
+    </div>
+    <footer>făcut cu 💜 pentru cultura românească</footer>
+</div>
+<script>
+const MEMES = [
+    { id: 'click1', name: 'Bă, e simplu', emoji: '🤷', desc: '+1 per click', cost: 10, type: 'click', bonus: 1, baseCost: 10, costMult: 1.15 },
+    { id: 'click2', name: 'Ce faci, ma?', emoji: '😎', desc: '+3 per click', cost: 50, type: 'click', bonus: 3, baseCost: 50, costMult: 1.15 },
+    { id: 'click3', name: 'Fără supărare', emoji: '😤', desc: '+8 per click', cost: 200, type: 'click', bonus: 8, baseCost: 200, costMult: 1.15 },
+    { id: 'click4', name: 'Ăsta e calcul', emoji: '🧮', desc: '+20 per click', cost: 800, type: 'click', bonus: 20, baseCost: 800, costMult: 1.15 },
+    { id: 'click5', name: 'E lege!', emoji: '⚖️', desc: '+50 per click', cost: 3000, type: 'click', bonus: 50, baseCost: 3000, costMult: 1.15 },
+    { id: 'click6', name: 'Dă-mi un like', emoji: '👍', desc: '+120 per click', cost: 10000, type: 'click', bonus: 120, baseCost: 10000, costMult: 1.15 },
+    { id: 'click7', name: 'Hai noroc!', emoji: '🍺', desc: '+300 per click', cost: 35000, type: 'click', bonus: 300, baseCost: 35000, costMult: 1.15 },
+    { id: 'click8', name: 'Nu mai contează', emoji: '😔', desc: '+800 per click', cost: 100000, type: 'click', bonus: 800, baseCost: 100000, costMult: 1.15 },
+    { id: 'click9', name: 'Ești copil?', emoji: '👶', desc: '+2000 per click', cost: 300000, type: 'click', bonus: 2000, baseCost: 300000, costMult: 1.15 },
+    { id: 'click10', name: 'M-am săturat', emoji: '😩', desc: '+5000 per click', cost: 1000000, type: 'click', bonus: 5000, baseCost: 1000000, costMult: 1.15 },
+    { id: 'auto1', name: 'Meme Bot', emoji: '🤖', desc: '+1/sec', cost: 100, type: 'auto', bonus: 1, baseCost: 100, costMult: 1.15 },
+    { id: 'auto2', name: 'Meme Spreader', emoji: '📡', desc: '+3/sec', cost: 400, type: 'auto', bonus: 3, baseCost: 400, costMult: 1.15 },
+    { id: 'auto3', name: 'Deep Fried Meme', emoji: '🍟', desc: '+8/sec', cost: 1500, type: 'auto', bonus: 8, baseCost: 1500, costMult: 1.15 },
+    { id: 'auto4', name: 'Meme Stonks', emoji: '📈', desc: '+20/sec', cost: 6000, type: 'auto', bonus: 20, baseCost: 6000, costMult: 1.15 },
+    { id: 'auto5', name: 'Meme Lord', emoji: '👑', desc: '+50/sec', cost: 20000, type: 'auto', bonus: 50, baseCost: 20000, costMult: 1.15 },
+    { id: 'auto6', name: 'Meme Time Machine', emoji: '⏰', desc: '+120/sec', cost: 70000, type: 'auto', bonus: 120, baseCost: 70000, costMult: 1.15 },
+    { id: 'auto7', name: 'Meme RAR', emoji: '🔥', desc: '+300/sec', cost: 200000, type: 'auto', bonus: 300, baseCost: 200000, costMult: 1.15 },
+    { id: 'auto8', name: 'Meme Suprem', emoji: '🏆', desc: '+800/sec', cost: 600000, type: 'auto', bonus: 800, baseCost: 600000, costMult: 1.15 },
+    { id: 'auto9', name: 'Meme Dumnezeu', emoji: '😇', desc: '+2000/sec', cost: 2000000, type: 'auto', bonus: 2000, baseCost: 2000000, costMult: 1.15 },
+    { id: 'auto10', name: 'Meme Big Bang', emoji: '💥', desc: '+5000/sec', cost: 5000000, type: 'auto', bonus: 5000, baseCost: 5000000, costMult: 1.15 },
+];
+
+let state = {
+    points: 0,
+    totalPoints: 0,
+    clickMultiplier: 1,
+    upgrades: {}
+};
+
+const SAVE_KEY = 'memeClickerSave';
+
+function save() {
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+            points: state.points,
+            totalPoints: state.totalPoints,
+            clickMultiplier: state.clickMultiplier,
+            upgrades: state.upgrades
+        }));
+    } catch(e) {}
+}
+
+function load() {
+    try {
+        const data = localStorage.getItem(SAVE_KEY);
+        if (data) {
+            const parsed = JSON.parse(data);
+            state.points = parsed.points || 0;
+            state.totalPoints = parsed.totalPoints || 0;
+            state.clickMultiplier = parsed.clickMultiplier || 1;
+            state.upgrades = parsed.upgrades || {};
+            return true;
+        }
+    } catch(e) {}
+    return false;
+}
+
+function resetGame() {
+    if (confirm('Ești sigur că vrei să resetezi tot progresul?')) {
+        localStorage.removeItem(SAVE_KEY);
+        state.points = 0;
+        state.totalPoints = 0;
+        state.clickMultiplier = 1;
+        state.upgrades = {};
+        render();
+        showToast('🗑 Progres resetat!');
+    }
+}
+
+function getCost(meme) {
+    const count = state.upgrades[meme.id] || 0;
+    return Math.floor(meme.baseCost * Math.pow(meme.costMult, count));
+}
+
+function getCount(meme) {
+    return state.upgrades[meme.id] || 0;
+}
+
+function getClickBonus() {
+    let bonus = state.clickMultiplier;
+    for (const meme of MEMES) {
+        if (meme.type === 'click') {
+            bonus += (state.upgrades[meme.id] || 0) * meme.bonus;
+        }
+    }
+    return bonus;
+}
+
+function getAutoBonus() {
+    let bonus = 0;
+    for (const meme of MEMES) {
+        if (meme.type === 'auto') {
+            bonus += (state.upgrades[meme.id] || 0) * meme.bonus;
+        }
+    }
+    return bonus;
+}
+
+function handleClick(e) {
+    const bonus = getClickBonus();
+    state.points += bonus;
+    state.totalPoints += bonus;
+    updateDisplay();
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const fly = document.createElement('div');
+    fly.className = 'click-fly';
+    fly.textContent = `+${bonus}`;
+    fly.style.left = (rect.left + rect.width / 2 - 20 + (Math.random() - 0.5) * 80) + 'px';
+    fly.style.top = (rect.top + rect.height / 2 - 20 + (Math.random() - 0.5) * 40) + 'px';
+    document.body.appendChild(fly);
+    setTimeout(() => fly.remove(), 800);
+    save();
+}
+
+function buyMeme(meme) {
+    const cost = getCost(meme);
+    if (state.points < cost) {
+        showToast('❌ Nu ai suficiente puncte!');
+        return;
+    }
+    state.points -= cost;
+    state.upgrades[meme.id] = (state.upgrades[meme.id] || 0) + 1;
+    const newMeme = MEMES.find(m => m.id === 'click1');
+    if (meme.type === 'click' && meme.bonus > 0) {
+    }
+    save();
+    render();
+    showToast(`✅ Ai cumpărat ${meme.name}!`);
+}
+
+function formatNumber(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1e3).toFixed(1) + 'K';
+    return Math.floor(n).toString();
+}
+
+function updateDisplay() {
+    document.getElementById('pointsDisplay').textContent = formatNumber(state.points);
+    document.getElementById('perSecondDisplay').textContent = `📈 +${formatNumber(getAutoBonus())}/sec`;
+}
+
+function render() {
+    const container = document.getElementById('shopContainer');
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'click';
+    const filtered = MEMES.filter(m => m.type === activeTab);
+
+    let html = `<h3>${activeTab === 'click' ? '🖱 Upgrade-uri Click' : '⚡ Auto Producători'}</h3>`;
+    for (const meme of filtered) {
+        const count = getCount(meme);
+        const cost = getCost(meme);
+        const canAfford = state.points >= cost;
+        html += `
+            <div class="meme-card ${count > 0 ? 'owned' : ''}">
+                <div class="meme-emoji">${meme.emoji}</div>
+                <div class="meme-name">${meme.name}</div>
+                <div class="meme-desc">${meme.desc}</div>
+                <div class="meme-cost">💰 ${formatNumber(cost)}</div>
+                ${count > 0 ? `<div class="meme-count">Dețin: ${count}</div>` : ''}
+                <button class="shop-btn" ${canAfford && state.points >= cost ? '' : 'disabled'}>Cumpără</button>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.shop-btn').forEach((btn, idx) => {
+        btn.addEventListener('click', () => buyMeme(filtered[idx]));
+    });
+
+    updateDisplay();
+}
+
+function showToast(msg) {
+    const old = document.querySelector('.toast');
+    if (old) old.remove();
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+
+document.getElementById('clickBtn').addEventListener('click', handleClick);
+document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+    });
+});
+
+setInterval(() => {
+    const bonus = getAutoBonus();
+    if (bonus > 0) {
+        state.points += bonus;
+        state.totalPoints += bonus;
+        updateDisplay();
+        save();
+    }
+}, 1000);
+
+if (!load()) {
+    showToast('🎮 Bun venit la Meme Clicker! Apasă pe meme 😂');
+}
+render();
+</script>
+</body>
+</html>
